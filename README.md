@@ -1,6 +1,6 @@
 <h1>Whono</h1>
 <hr>
-<p>This is a game of Uno designed to be played in the browser.</p>
+<p>This is an Uno style game designed to be played in the browser.</p>
 <p>
     It will feature a web client written in Rust that compiles to web assembly.<br>
     A web server for hosting the application and managing the lobby.<br>
