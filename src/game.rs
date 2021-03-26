@@ -1,6 +1,6 @@
 
+#[derive(PartialEq)]
 
-#[derive(PartialEq, Eq)]
 enum Card {
     Value(u8, Colour),
     Draw(u8, Colour),
@@ -35,7 +35,13 @@ impl Card {
             _ => None
         }
     }
+
+    fn variant_eq(&self, other: Card) -> bool {
+        std::mem::discriminant(self) == std::mem::discriminant(&other)
+    }
 }
+
+
 
 #[derive(PartialEq, Eq, Clone, Copy)]
 enum Colour {
@@ -91,7 +97,7 @@ impl<'a> Whono<'a> {
         }
     }
 
-    // Game runs clockwise by default, from index 0 to the amount of players and back
+    // Game runs clockwise to start, from index 0 to the amount of players and back
     fn increment_turn(&mut self) {
         if self.direction == Direction::Clockwise {
             if self.current_player_index == (self.players.len() - 1) {
@@ -109,12 +115,12 @@ impl<'a> Whono<'a> {
     }
 
     fn draw_cards(&mut self, amount: u16) {
-        for i in 0..amount {
+        for _ in 0..amount {
             self.players[self.current_player_index].cards.push(self.deck.pop().unwrap());
         }
     }
 
-    fn discard_card(&mut self, card_index: usize, wild_colour: Option<Colour>) {
+    fn discard_card(&mut self, card_index: usize, wild_colour: Option<Colour>) -> bool {
         let card = &self.players[self.current_player_index].cards[card_index];
         let top_discard_card = &self.discard[self.discard.len() -1];
         let matched = match top_discard_card {
@@ -122,23 +128,26 @@ impl<'a> Whono<'a> {
                 card.get_colour() == c || (card.get_value().is_some() && (card.get_value().unwrap() == *num))
             },
             Card::Draw(num, c) => {
-                card.get_colour() == c || (card.get_value().is_some() && (card.get_value().unwrap() == *num))
+                card.get_colour() == c || (card.get_value().is_some() && (card.get_value().unwrap() == *num)) || card.variant_eq(Card::Draw(*num, *c))
             },
-            Card::Reverse(c) => card.get_colour() == c,
-            Card::Skip(c) => card.get_colour() == c,
-            Card::Wild(c) => card.get_colour() == c,
+            Card::Reverse(c) => card.get_colour() == c || card.variant_eq(Card::Reverse(*c)),
+            Card::Skip(c) => card.get_colour() == c || card.variant_eq(Card::Skip(*c)),
+            Card::Wild(c) => true,
             Card::Blank(c) => card.get_colour() == c,
             _ => false
         };
         if let Some(colour) = wild_colour {
             self.players[self.current_player_index].cards[card_index] = Card::Blank(colour);
             self.discard.push(self.players[self.current_player_index].cards.remove(card_index));
+            return true;
         } else if matched {
             if card == &Card::Reverse(*card.get_colour()) {
                 self.reverse_direction();
             }
             self.discard.push(self.players[self.current_player_index].cards.remove(card_index));
+            return true;
         }
+        false
     }
 
     fn reverse_direction(&mut self) {
