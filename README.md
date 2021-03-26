@@ -10,3 +10,6 @@
 <hr>
 <h3>Assets</h3>
 <p>The card assets are courtesy of <a href="https://www.kenney.nl">Kenney of kenney.nl</a> and their <a href="https://www.kenney.nl/assets/playing-cards-pack">playing cards pack</a>.</p>
+
+<h3>Disclaimer</h3>
+<p>Uno™, the game this is based on, is a Mattel product, this project has no association with Mattel and they do not endorse this project.</p>
