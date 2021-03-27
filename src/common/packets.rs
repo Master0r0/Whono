@@ -12,6 +12,57 @@ pub trait Protocol {
     fn decode(src: &mut dyn Read) -> std::io::Result<Self::Object>;
 }
 
+macro_rules! struct_protocol {
+    ($s_name:ident, {$($name:ident: $val:ty),*} ) => {
+        
+        struct $s_name {
+            $(
+                $name: $val,
+            )*
+        }
+
+        impl $s_name {
+            pub fn new($($name: $val,)*) -> Self {
+                Self {
+                    $(
+                        $name
+                    ),*
+                }
+            }
+        }
+
+        impl Protocol for $s_name {
+            type Object = Self;
+
+            fn byte_length(value: &$s_name) -> usize {
+                $(
+                    <$val as Protocol>::byte_length(&value.$name) +
+                )*
+                0
+            }
+
+            fn encode(value: &$s_name, dest: &mut dyn Write) -> io::Result<()> {
+                $(
+                    <$val as Protocol>::encode(&value.$name, dest)?;
+                )*
+
+                Ok(())
+            }
+
+            fn decode(src: &mut dyn Read) -> io::Result<$s_name> {
+                Ok(
+                    $s_name {
+                        $(
+                            $name: <$val as Protocol>::decode(src)?
+                        ),*
+                    }
+                )
+            }
+        }
+
+    };
+}
+
 #[allow(unused_macros)]
 macro_rules! impl_protocol {
     ($name:ty, 1, $encode_name:ident, $decode_name:ident) => {
