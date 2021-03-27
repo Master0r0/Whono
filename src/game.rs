@@ -1,6 +1,6 @@
 
 #[derive(PartialEq)]
-
+#[allow(dead_code)]
 enum Card {
     Value(u8, Colour),
     Draw(u8, Colour),
@@ -11,6 +11,7 @@ enum Card {
     None
 }
 
+#[allow(dead_code)]
 impl Card {
     fn get_colour(&self) -> &Colour {
         match self {
@@ -44,6 +45,7 @@ impl Card {
 
 
 #[derive(PartialEq, Eq, Clone, Copy)]
+#[allow(dead_code)]
 enum Colour {
     Green,
     Purple,
@@ -54,6 +56,7 @@ enum Colour {
 
 
 #[derive(PartialEq, Eq)]
+#[allow(dead_code)]
 enum Direction {
     Clockwise,
     CounterClockwise
