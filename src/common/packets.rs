@@ -12,6 +12,25 @@ pub trait Protocol {
     fn decode(src: &mut dyn Read) -> std::io::Result<Self::Object>;
 }
 
+pub trait PacketWrite {
+    fn packet_len(&self) -> usize;
+    fn packet_encode(&self, dst: &mut dyn Write) -> io::Result<()>;
+
+    fn write(&self, dst: &mut dyn Write) -> io::Result<()> {
+        let len = self.packet_len();
+        u16::encode(&(len as u16), dst)?;
+        self.packet_encode(dst)
+    }
+}
+
+pub trait PacketRead: Sized {
+    fn packet_decode(src: &mut dyn Read) -> io::Result<Self>;
+
+    fn read<R: Read>(src: &mut R) -> io::Result<Self> {
+        let proto_len = <u16 as Protocol>::decode(src)?;
+        Self::packet_decode(&mut src.take(proto_len as u64))
+    }
+}
 macro_rules! struct_protocol {
     ($s_name:ident, {$($name:ident: $val:ty),*} ) => {
         
