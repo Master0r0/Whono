@@ -119,6 +119,43 @@ macro_rules! impl_protocol {
     };
 }
 
+#[allow(unused_macros)]
+macro_rules! packets {
+    ($($id:expr => $s_name:ident{$($name:ident: $val:ty),*})*) => {
+        enum Packet {
+            // Creates an enum with the name of the struct and has the struct as data
+            $($s_name($s_name),)*
+            Unknown,
+        }
+
+        $(
+            struct_protocol!($s_name{$($name: $val),*});
+
+            impl PacketWrite for $s_name {
+                fn packet_len(&self) -> usize {
+                    let id_len = <u16 as Protocol>::byte_length(&$id);
+                    id_len + <Self as Protocol>::byte_length(self)
+                }
+    
+                fn packet_encode(&self, dst: &mut dyn Write) -> io::Result<()> {
+                    <u16 as Protocol>::encode(&$id, dst)?;
+                    <Self as Protocol>::encode(self, dst)
+                }
+            }
+        )*
+
+        impl PacketRead for Packet {
+            fn packet_decode(src: &mut dyn Read) -> io::Result<Self> {
+                match <u16 as Protocol>::decode(src)? {
+                    $($id => <$s_name as Protocol>::decode(src).map(Packet::$s_name),)*
+                    _ => Err(io::Error::new(io::ErrorKind::InvalidInput, "Unknown Packet id")),
+                }
+            }
+        }
+
+
+    };
+}
 impl_protocol!(i8,  1, write_i8,  read_i8);
 impl_protocol!(u8,  1, write_u8,  read_u8);
 impl_protocol!(i16, 2, write_i16, read_i16);
