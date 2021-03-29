@@ -8,8 +8,8 @@ pub trait Protocol {
     type Object;
 
     fn byte_length(value: &Self::Object) -> usize;
-    fn encode(value: &Self::Object, dest: &mut dyn Write) -> std::io::Result<()>;
-    fn decode(src: &mut dyn Read) -> std::io::Result<Self::Object>;
+    fn encode(value: &Self::Object, dest: &mut dyn Write) -> io::Result<()>;
+    fn decode(src: &mut dyn Read) -> io::Result<Self::Object>;
 }
 
 pub trait PacketWrite {
@@ -31,8 +31,9 @@ pub trait PacketRead: Sized {
         Self::packet_decode(&mut src.take(proto_len as u64))
     }
 }
+
 macro_rules! struct_protocol {
-    ($s_name:ident, {$($name:ident: $val:ty),*} ) => {
+    ($s_name:ident{$($name:ident: $val:ty),*} ) => {
         
         struct $s_name {
             $(
@@ -80,9 +81,9 @@ macro_rules! struct_protocol {
         }
 
     };
+    // TODO: Support tuple structs
 }
 
-#[allow(unused_macros)]
 macro_rules! impl_protocol {
     ($name:ty, 1, $encode_name:ident, $decode_name:ident) => {
         impl Protocol for $name {
@@ -156,6 +157,7 @@ macro_rules! packets {
 
     };
 }
+
 impl_protocol!(i8,  1, write_i8,  read_i8);
 impl_protocol!(u8,  1, write_u8,  read_u8);
 impl_protocol!(i16, 2, write_i16, read_i16);
@@ -220,4 +222,3 @@ impl<T: Protocol> Protocol for Option<T> {
         }
     }
 }
-
