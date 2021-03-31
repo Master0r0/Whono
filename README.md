@@ -4,7 +4,6 @@
 <p>
     It will feature a web client written in Rust that compiles to web assembly.<br>
     A web server for hosting the application and managing the lobby.<br>
-    Connection between clients and game host will be via WebRTC.
 </p>
 <hr>
 <h3>Assets</h3>
