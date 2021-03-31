@@ -1,6 +1,5 @@
 use std::io;
 use std::{io::{Write, Read}};
-use std::io::Cursor;
 use serde::{Deserialize, Serialize};
 use byteorder::{ReadBytesExt, BigEndian, WriteBytesExt};
 
@@ -42,6 +41,7 @@ macro_rules! struct_protocol {
         }
 
         impl $s_name {
+            #[allow(unused)]
             pub fn new($($name: $val,)*) -> Self {
                 Self {
                     $(
@@ -53,14 +53,14 @@ macro_rules! struct_protocol {
 
         impl Protocol for $s_name {
             type Object = Self;
-
+            #[allow(unused)]
             fn byte_length(value: &$s_name) -> usize {
                 $(
                     <$val as Protocol>::byte_length(&value.$name) +
                 )*
                 0
             }
-
+            #[allow(unused)]
             fn encode(value: &$s_name, dest: &mut dyn Write) -> io::Result<()> {
                 $(
                     <$val as Protocol>::encode(&value.$name, dest)?;
@@ -68,7 +68,7 @@ macro_rules! struct_protocol {
 
                 Ok(())
             }
-
+            #[allow(unused)]
             fn decode(src: &mut dyn Read) -> io::Result<$s_name> {
                 Ok(
                     $s_name {
@@ -119,13 +119,13 @@ macro_rules! impl_protocol {
         }
     };
 }
-
 #[allow(unused_macros)]
 macro_rules! packets {
-    ($($id:expr => $s_name:ident{$($name:ident: $val:ty),*})*) => {
+    ($($id:expr => $s_name:ident{$($name:ident: $val:ty),*}),*) => {
         enum Packet {
             // Creates an enum with the name of the struct and has the struct as data
             $($s_name($s_name),)*
+            #[allow(unused)]
             Unknown,
         }
 
@@ -169,10 +169,34 @@ impl_protocol!(u64, 8, write_u64, read_u64);
 impl_protocol!(f32, 4, write_f32, read_f32);
 impl_protocol!(f64, 8, write_f64, read_f64);
 
+impl Protocol for String {
+    type Object = String;
+
+    fn byte_length(value: &Self::Object) -> usize {
+        value.as_bytes().len()
+    }
+
+    fn encode(value: &Self::Object, dest: &mut dyn Write) -> io::Result<()> {
+        dest.write_all(value.as_bytes())?;
+        Ok(())
+    }
+
+    fn decode(src: &mut dyn Read) -> io::Result<Self::Object> {
+        let mut value: String = String::new();
+        loop {
+            let byte = src.read_u8()?;
+            if byte == b'\n' {break;}
+            value.push(char::from(byte));
+        }
+
+        Ok(value)
+    }
+}
+
 impl Protocol for bool {
     type Object = bool;
 
-    fn byte_length(value: &Self::Object) -> usize { 1 }
+    fn byte_length(_value: &Self::Object) -> usize { 1 }
 
     fn encode(value: &Self::Object, dest: &mut dyn Write) -> io::Result<()> {
         dest.write_u8(if *value {1} else {0})?;
@@ -219,6 +243,29 @@ impl<T: Protocol> Protocol for Option<T> {
             Ok(Some(T::decode(src)?))
         } else {
             Ok(None)
+        }
+    }
+}
+
+mod web_socket {
+    mod client_bound {
+        use super::super::{Protocol, PacketRead, PacketWrite};
+        use std::io;
+        use std::io::{Read, Write};
+
+        packets! {
+            0x00 => Ping{}
+        }
+    }
+
+    mod server_bound {
+        use super::super::{Protocol, PacketRead, PacketWrite};
+        use std::io;
+        use std::io::{Read, Write};
+
+        packets! {
+            0x00 => Pong{},
+            0x01 => Create{creator_name: String, lobby_name: String}
         }
     }
 }
